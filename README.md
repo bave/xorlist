@@ -1,4 +1,5 @@
 # xorlist
+
 xorlist (rust library test)
 
 ```
@@ -9,8 +10,11 @@ xorlist (rust library test)
 └── src
     └── main.rs
 ```
+---
 
-```markdown:Cargo.toml
+## Cargo.toml
+
+```markdown
 [package]
 name = "test_xorlist"
 version = "0.1.0"
@@ -20,7 +24,10 @@ edition = "2018"
 xorlist = { git = "https://github.com/bave/xorlist.git" }
 ```
 
-```rust:src/main.rs
+---
+
+## src/main.rs
+```rust
 extern crate xorlist;
 
 use std::process::exit;
@@ -36,6 +43,9 @@ fn main() {
 }
 ```
 
+---
+
+## shell
 
 ```shell
 % cargo run
