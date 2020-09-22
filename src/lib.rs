@@ -1,3 +1,6 @@
+use std::iter::Iterator;
+use std::marker::PhantomData;
+
 pub struct XorList<T>
 {
     head: LINK<T>,
@@ -6,7 +9,7 @@ pub struct XorList<T>
 }
 
 type LINK<T> = *mut Node<T>;
-struct Node<T> {
+pub struct Node<T> {
     xor: LINK<T>,
     val: Option<T>
 }
@@ -141,9 +144,51 @@ impl<T> XorList<T>
         };
     }
     */
+
+    pub fn iter(&self) -> XorListIter<T>
+    {
+        let pre = self.head;
+        let cur = unsafe {Self::xorptr(std::ptr::null_mut(), (*pre).xor)};
+        XorListIter {
+            cur: Some((pre, cur)),
+            _ph : std::marker::PhantomData
+        }
+    }
 }
 
-impl<T> Drop for XorList<T> {
+pub struct XorListIter<'a, T>
+{
+    cur : Option<(LINK<T>, LINK<T>)>,
+    _ph : PhantomData<&'a T>
+}
+
+impl<'a, T> Iterator for XorListIter<'a, T>
+{
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        match self.cur {
+            None => {
+                None
+            },
+            Some(n) => {
+                unsafe {
+                    let p = n.0;
+                    let c = n.1;
+                    let t = ((p as usize) ^ ((*c).xor as usize)) as LINK<T>;
+                    self.cur = Some((c, t));
+                    match (*n.1).val {
+                        None => { self.cur = None; None }
+                        _ => { (*n.1).val.as_ref() }
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<T> Drop for XorList<T>
+{
     fn drop(&mut self)
     {
         while self.size != 0 {
@@ -151,6 +196,70 @@ impl<T> Drop for XorList<T> {
         }
     }
 }
+
+/*
+// LINK<T> iter sample
+pub struct XorListIter<T>
+{
+    cur : Option<(LINK<T>, LINK<T>)>
+}
+
+impl<T> Iterator for XorListIter<T>
+{
+    type Item = LINK<T>;
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        match self.cur {
+            None => {
+                None
+            },
+            Some(n) => {
+                unsafe {
+                    let p = n.0;
+                    let c = n.1;
+                    let t = ((p as usize) ^ ((*c).xor as usize)) as LINK<T>;
+                    self.cur = Some((c, t));
+                    Some(&mut (*n.1))
+                }
+            }
+        }
+    }
+}
+*/
+
+
+/*
+// Clone iter sample
+pub struct XorListIterator<T>
+{
+    cur: Option<(LINK<T>, LINK<T>)>
+}
+
+impl<T: Clone> IntoIterator for XorList<T>
+{
+    type Item = T;
+    type IntoIter = XorListIterator<T>;
+    fn into_iter(self) -> Self::IntoIter
+    {
+        self.iter()
+    }
+}
+
+impl<T: Clone> Iterator for XorListIterator<T>
+{
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        match self.cur.take()
+        {
+            None => None,
+            Some(n) => {
+                unsafe { (*(n.1)).val.clone() }
+            }
+        }
+    }
+}
+*/
 
 #[cfg(test)]
 mod tests {
@@ -172,4 +281,43 @@ mod tests {
         }
         Ok(())
     }
+
+    #[test]
+    fn iter() -> Result<(), String>
+    {
+        let mut xl = XorList::new() as XorList<u64>;
+        xl.push_back(10);
+        xl.push_back(20);
+        xl.push_back(30);
+        let mut it = xl.iter();
+        println!("{}", it.next().unwrap());
+        println!("{}", it.next().unwrap());
+        println!("{}", it.next().unwrap());
+        let mut it = xl.iter();
+        println!("{:?}", it.next());
+        println!("{:?}", it.next());
+        println!("{:?}", it.next());
+        println!("{:?}", it.next());
+        println!("{:?}", it.next());
+        Ok(())
+    }
+    /*
+    #[test]
+    fn iter() -> Result<(), String>
+    {
+        let mut xl = XorList::new() as XorList<u64>;
+        xl.push_back(10);
+        xl.push_back(20);
+        xl.push_back(30);
+        let mut it = xl.iter();
+        let mut n = it.next().unwrap();
+        let mut v = unsafe {(*n).val.unwrap()};
+        println!("{}", v);
+        n = it.next().unwrap();
+        v = unsafe {(*n).val.unwrap()};
+        println!("{}", v);
+        Ok(())
+    }
+    */
 }
+
