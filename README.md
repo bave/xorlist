@@ -1,6 +1,6 @@
 # xorlist
 
-![CI](https://github.com/bave/xorlist/workflows/workflows/CI/badge.svg)
+![Rust](https://github.com/bave/xorlist/workflows/Rust/badge.svg)
 
 xorlist (rust library test)
 
