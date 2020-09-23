@@ -3,6 +3,10 @@ name = "xorlist"
 version = "0.1.0"
 authors = ["bave <inoue.tomoya@gmail.com>"]
 edition = "2018"
+license-file = "LICENSE"
+repository = "https://github.com/bave/xorlist"
+homepage = "https://github.com/bave/xorlist"
+description = "xorlist"
 
 [lib]
 name = "xorlist"
