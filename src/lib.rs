@@ -419,7 +419,7 @@ mod tests {
         for i in 0..1000 {
             xl.push_back(i)
         }
-        for _ in xl {
+        for _ in &mut xl {
         }
         Ok(())
     }
