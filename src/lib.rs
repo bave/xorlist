@@ -1,6 +1,3 @@
-use std::iter::Iterator;
-use std::marker::PhantomData;
-
 pub struct XorList<T>
 {
     head: LINK<T>,
@@ -165,7 +162,7 @@ impl<T> XorList<T>
         let cur = unsafe {Self::xorptr(std::ptr::null_mut(), (*pre).xor)};
         XorListIter {
             cur: Some((pre, cur)),
-            _ph : PhantomData
+            _ph : std::marker::PhantomData
         }
     }
     */
@@ -189,7 +186,7 @@ impl<T> std::iter::IntoIterator for XorList<T>
     }
 }
 
-impl<T> Iterator for XorListIterRaw<T>
+impl<T> std::iter::Iterator for XorListIterRaw<T>
 {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item>
@@ -201,7 +198,7 @@ impl<T> Iterator for XorListIterRaw<T>
 pub struct XorListIter<'a, T>
 {
     cur : Option<(LINK<T>, LINK<T>)>,
-    _ph : PhantomData<&'a T>
+    _ph : std::marker::PhantomData<&'a T>
 }
 
 
@@ -217,12 +214,12 @@ impl<'a, T> std::iter::IntoIterator for &'a XorList<T>
         };
         XorListIter {
             cur: Some((pre, cur)),
-            _ph : PhantomData
+            _ph : std::marker::PhantomData
         }
     }
 }
 
-impl<'a, T> Iterator for XorListIter<'a, T>
+impl<'a, T> std::iter::Iterator for XorListIter<'a, T>
 {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item>
@@ -250,7 +247,7 @@ impl<'a, T> Iterator for XorListIter<'a, T>
 pub struct XorListIterMut<'a, T>
 {
     cur : Option<(LINK<T>, LINK<T>)>,
-    _ph : PhantomData<&'a mut T>
+    _ph : std::marker::PhantomData<&'a mut T>
 }
 
 impl<'a, T> std::iter::IntoIterator for &'a mut XorList<T> 
@@ -265,12 +262,12 @@ impl<'a, T> std::iter::IntoIterator for &'a mut XorList<T>
         };
         XorListIterMut {
             cur: Some((pre, cur)),
-            _ph : PhantomData
+            _ph : std::marker::PhantomData
         }
     }
 }
 
-impl<'a, T> Iterator for XorListIterMut<'a, T>
+impl<'a, T> std::iter::Iterator for XorListIterMut<'a, T>
 {
     type Item = &'a mut T;
     fn next(&mut self) -> Option<Self::Item>
@@ -353,7 +350,7 @@ impl<T: Clone> IntoIterator for XorList<T>
     }
 }
 
-impl<T: Clone> Iterator for XorListIterator<T>
+impl<T: Clone> std::iter::Iterator for XorListIterator<T>
 {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item>
