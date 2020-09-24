@@ -156,6 +156,12 @@ impl<T> XorList<T>
     */
 
     /*
+    // from reference
+    // https://doc.rust-lang.org/std/iter/#the-three-forms-of-iteration
+    iter(), which iterates over &T.
+    iter_mut(), which iterates over &mut T.
+    into_iter(), which iterates over T.
+    */
     pub fn iter(&self) -> XorListIter<T>
     {
         let pre = self.head;
@@ -165,7 +171,24 @@ impl<T> XorList<T>
             _ph : std::marker::PhantomData
         }
     }
-    */
+
+    pub fn iter_mut(&mut self) -> XorListIterMut<'_, T>
+    {
+        let pre = self.head;
+        let cur = unsafe {Self::xorptr(std::ptr::null_mut(), (*pre).xor)};
+        XorListIterMut {
+            cur: Some((pre, cur)),
+            _ph : std::marker::PhantomData
+        }
+    }
+
+    pub fn into_iter(self) -> XorListIterRaw<T>
+    {
+        XorListIterRaw {
+            xorlist: self
+        }
+    }
+
 }
 
 
@@ -421,6 +444,27 @@ mod tests {
         }
         for _ in xl {
         }
+        Ok(())
+    }
+
+
+    #[test]
+    fn iter_methods() -> Result<(), String>
+    {
+        let mut xl = XorList::new() as XorList<u64>;
+        for i in 0..5 {
+            xl.push_back(i);
+        }
+
+        let xl_iter_map_collect = xl.iter().map(|x| x + 1).collect::<Vec<u64>>();
+        print!("{:?}\n", xl_iter_map_collect);
+
+        let xl_iter_mut_map_collect = xl.iter_mut().map(|x| *x + 1).collect::<Vec<u64>>();
+        print!("{:?}\n", xl_iter_mut_map_collect);
+
+        //xl moved ownership
+        let xl_into_iter_map_collect = xl.into_iter().map(|x| x + 1).collect::<Vec<u64>>();
+        print!("{:?}\n", xl_into_iter_map_collect);
         Ok(())
     }
 
