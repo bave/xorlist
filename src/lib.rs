@@ -1,36 +1,32 @@
-pub struct XorList<T>
-{
+pub struct XorList<T> {
     head: LINK<T>,
     tail: LINK<T>,
-    size: usize
+    size: usize,
 }
 
 type LINK<T> = *mut Node<T>;
 pub struct Node<T> {
     xor: LINK<T>,
-    val: Option<T>
+    val: Option<T>,
 }
 
-impl<T> XorList<T>
-{
-    pub fn new() -> Self
-    {
+impl<T> XorList<T> {
+    pub fn new() -> Self {
         let ht = unsafe {
-            let mut h = Self::new_node();
-            let mut t = Self::new_node();
+            let h = Self::new_node();
+            let t = Self::new_node();
             (*h).xor = Self::xorptr(std::ptr::null_mut(), t);
             (*t).xor = Self::xorptr(h, std::ptr::null_mut());
             (h, t)
         };
-        Self{
+        Self {
             head: ht.0,
             tail: ht.1,
-            size: 0
+            size: 0,
         }
     }
 
-    pub fn push_front(&mut self, val: T)
-    {
+    pub fn push_front(&mut self, val: T) {
         let fb = unsafe {
             let f = self.head;
             let b = Self::xorptr(std::ptr::null_mut(), (*f).xor);
@@ -39,8 +35,7 @@ impl<T> XorList<T>
         self.add(fb.0, fb.1, val);
     }
 
-    pub fn push_back(&mut self, val: T)
-    {
+    pub fn push_back(&mut self, val: T) {
         let fb = unsafe {
             let b = self.tail;
             let f = Self::xorptr((*b).xor, std::ptr::null_mut());
@@ -49,36 +44,30 @@ impl<T> XorList<T>
         self.add(fb.0, fb.1, val);
     }
 
-    pub fn pop_front(&mut self) -> Option<T>
-    {
+    pub fn pop_front(&mut self) -> Option<T> {
         match self.size {
-            0 => {
-                None
-            },
+            0 => None,
             _ => unsafe {
                 self.size -= 1;
-                let mut f = self.head;
+                let f = self.head;
                 let c = Self::xorptr(std::ptr::null_mut(), (*f).xor);
-                let mut b = Self::xorptr(f, (*c).xor);
+                let b = Self::xorptr(f, (*c).xor);
                 (*b).xor = Self::xorptr(Self::xorptr(f, c), (*b).xor);
                 (*f).xor = Self::xorptr(Self::xorptr(c, b), (*f).xor);
                 (*Box::from_raw(c)).val
-            }
+            },
         }
     }
 
-    pub fn pop_back(&mut self) -> Option<T>
-    {
+    pub fn pop_back(&mut self) -> Option<T> {
         match self.size {
-            0 => {
-                None
-            },
+            0 => None,
             _ => {
                 self.size -= 1;
                 unsafe {
-                    let mut b = self.tail;
+                    let b = self.tail;
                     let c = Self::xorptr((*b).xor, std::ptr::null_mut());
-                    let mut f = Self::xorptr((*c).xor, b);
+                    let f = Self::xorptr((*c).xor, b);
                     (*b).xor = Self::xorptr(Self::xorptr(f, c), (*b).xor);
                     (*f).xor = Self::xorptr(Self::xorptr(c, b), (*f).xor);
                     (*Box::from_raw(c)).val
@@ -87,33 +76,31 @@ impl<T> XorList<T>
         }
     }
 
-    pub fn len(&self) -> usize 
-    {
+    pub fn len(&self) -> usize {
         self.size
     }
 
-    pub fn is_empty(&self) -> bool
-    {
+    pub fn is_empty(&self) -> bool {
         match self.size {
-            0 => { true },
-            _ => { false },
+            0 => true,
+            _ => false,
         }
     }
 
-    fn new_node() -> LINK<T>
-    {
-        Box::into_raw(Box::new(Node{xor: 0 as LINK<T>, val: None}))
+    fn new_node() -> LINK<T> {
+        Box::into_raw(Box::new(Node {
+            xor: 0 as LINK<T>,
+            val: None,
+        }))
     }
 
-    fn xorptr(a: LINK<T>, b: LINK<T>) -> LINK<T>
-    {
+    fn xorptr(a: LINK<T>, b: LINK<T>) -> LINK<T> {
         ((a as usize) ^ (b as usize)) as LINK<T>
     }
 
-    fn add(&mut self, f: LINK<T>, b: LINK<T>, val: T)
-    {
+    fn add(&mut self, f: LINK<T>, b: LINK<T>, val: T) {
         let n = unsafe {
-            let mut n = Self::new_node();
+            let n = Self::new_node();
             (*n).val = Some(val);
             (*n).xor = Self::xorptr(f, b);
             n
@@ -162,163 +149,134 @@ impl<T> XorList<T>
     iter_mut(), which iterates over &mut T.
     into_iter(), which iterates over T.
     */
-    pub fn iter(&self) -> XorListIter<T>
-    {
+    pub fn iter(&self) -> XorListIter<'_, T> {
         let pre = self.head;
-        let cur = unsafe {Self::xorptr(std::ptr::null_mut(), (*pre).xor)};
+        let cur = unsafe { Self::xorptr(std::ptr::null_mut(), (*pre).xor) };
         XorListIter {
             cur: Some((pre, cur)),
-            _ph : std::marker::PhantomData
+            _ph: std::marker::PhantomData,
         }
     }
 
-    pub fn iter_mut(&mut self) -> XorListIterMut<'_, T>
-    {
+    pub fn iter_mut(&mut self) -> XorListIterMut<'_, T> {
         let pre = self.head;
-        let cur = unsafe {Self::xorptr(std::ptr::null_mut(), (*pre).xor)};
+        let cur = unsafe { Self::xorptr(std::ptr::null_mut(), (*pre).xor) };
         XorListIterMut {
             cur: Some((pre, cur)),
-            _ph : std::marker::PhantomData
+            _ph: std::marker::PhantomData,
         }
     }
 
-    pub fn into_iter(self) -> XorListIterRaw<T>
-    {
-        XorListIterRaw {
-            xorlist: self
-        }
+    pub fn into_iter(self) -> XorListIterRaw<T> {
+        XorListIterRaw { xorlist: self }
     }
-
 }
 
-
-pub struct XorListIterRaw<T>
-{
-    xorlist: XorList<T>
+pub struct XorListIterRaw<T> {
+    xorlist: XorList<T>,
 }
 
-impl<T> std::iter::IntoIterator for XorList<T> 
-{
+impl<T> std::iter::IntoIterator for XorList<T> {
     type Item = T;
     type IntoIter = XorListIterRaw<T>;
-    fn into_iter(self) -> XorListIterRaw<T>
-    {
-        XorListIterRaw {
-            xorlist: self
-        }
+    fn into_iter(self) -> XorListIterRaw<T> {
+        XorListIterRaw { xorlist: self }
     }
 }
 
-impl<T> std::iter::Iterator for XorListIterRaw<T>
-{
+impl<T> std::iter::Iterator for XorListIterRaw<T> {
     type Item = T;
-    fn next(&mut self) -> Option<Self::Item>
-    {
+    fn next(&mut self) -> Option<Self::Item> {
         self.xorlist.pop_front()
     }
 }
 
-pub struct XorListIter<'a, T>
-{
-    cur : Option<(LINK<T>, LINK<T>)>,
-    _ph : std::marker::PhantomData<&'a T>
+pub struct XorListIter<'a, T> {
+    cur: Option<(LINK<T>, LINK<T>)>,
+    _ph: std::marker::PhantomData<&'a T>,
 }
 
-
-impl<'a, T> std::iter::IntoIterator for &'a XorList<T> 
-{
+impl<'a, T> std::iter::IntoIterator for &'a XorList<T> {
     type Item = &'a T;
     type IntoIter = XorListIter<'a, T>;
-    fn into_iter(self) -> XorListIter<'a, T>
-    {
+    fn into_iter(self) -> XorListIter<'a, T> {
         let pre = self.head;
         let cur = unsafe {
             ((std::ptr::null_mut() as LINK<T>) as usize ^ (*pre).xor as usize) as LINK<T>
         };
         XorListIter {
             cur: Some((pre, cur)),
-            _ph : std::marker::PhantomData
+            _ph: std::marker::PhantomData,
         }
     }
 }
 
-impl<'a, T> std::iter::Iterator for XorListIter<'a, T>
-{
+impl<'a, T> std::iter::Iterator for XorListIter<'a, T> {
     type Item = &'a T;
-    fn next(&mut self) -> Option<Self::Item>
-    {
+    fn next(&mut self) -> Option<Self::Item> {
         match self.cur {
-            None => {
-                None
-            },
-            Some(n) => {
-                unsafe {
-                    let p = n.0;
-                    let c = n.1;
-                    let t = ((p as usize) ^ ((*c).xor as usize)) as LINK<T>;
-                    self.cur = Some((c, t));
-                    match (*n.1).val {
-                        None => { self.cur = None; None }
-                        _ => { (*n.1).val.as_ref() }
+            None => None,
+            Some(n) => unsafe {
+                let p = n.0;
+                let c = n.1;
+                let t = ((p as usize) ^ ((*c).xor as usize)) as LINK<T>;
+                self.cur = Some((c, t));
+                match (*n.1).val {
+                    None => {
+                        self.cur = None;
+                        None
                     }
+                    _ => (*n.1).val.as_ref(),
                 }
-            }
+            },
         }
     }
 }
 
-pub struct XorListIterMut<'a, T>
-{
-    cur : Option<(LINK<T>, LINK<T>)>,
-    _ph : std::marker::PhantomData<&'a mut T>
+pub struct XorListIterMut<'a, T> {
+    cur: Option<(LINK<T>, LINK<T>)>,
+    _ph: std::marker::PhantomData<&'a mut T>,
 }
 
-impl<'a, T> std::iter::IntoIterator for &'a mut XorList<T> 
-{
+impl<'a, T> std::iter::IntoIterator for &'a mut XorList<T> {
     type Item = &'a mut T;
     type IntoIter = XorListIterMut<'a, T>;
-    fn into_iter(self) -> XorListIterMut<'a, T>
-    {
+    fn into_iter(self) -> XorListIterMut<'a, T> {
         let pre = self.head;
         let cur = unsafe {
             ((std::ptr::null_mut() as LINK<T>) as usize ^ (*pre).xor as usize) as LINK<T>
         };
         XorListIterMut {
             cur: Some((pre, cur)),
-            _ph : std::marker::PhantomData
+            _ph: std::marker::PhantomData,
         }
     }
 }
 
-impl<'a, T> std::iter::Iterator for XorListIterMut<'a, T>
-{
+impl<'a, T> std::iter::Iterator for XorListIterMut<'a, T> {
     type Item = &'a mut T;
-    fn next(&mut self) -> Option<Self::Item>
-    {
+    fn next(&mut self) -> Option<Self::Item> {
         match self.cur {
-            None => {
-                None
-            },
-            Some(n) => {
-                unsafe {
-                    let p = n.0;
-                    let c = n.1;
-                    let t = ((p as usize) ^ ((*c).xor as usize)) as LINK<T>;
-                    self.cur = Some((c, t));
-                    match (*n.1).val {
-                        None => { self.cur = None; None }
-                        _ => { (*n.1).val.as_mut() }
+            None => None,
+            Some(n) => unsafe {
+                let p = n.0;
+                let c = n.1;
+                let t = ((p as usize) ^ ((*c).xor as usize)) as LINK<T>;
+                self.cur = Some((c, t));
+                match (*n.1).val {
+                    None => {
+                        self.cur = None;
+                        None
                     }
+                    _ => (*n.1).val.as_mut(),
                 }
-            }
+            },
         }
     }
 }
 
-impl<T> Drop for XorList<T>
-{
-    fn drop(&mut self)
-    {
+impl<T> Drop for XorList<T> {
+    fn drop(&mut self) {
         while self.size != 0 {
             self.pop_front();
         }
@@ -354,7 +312,6 @@ impl<T> Iterator for XorListIter<T>
     }
 }
 */
-
 
 /*
 // Clone iter sample
@@ -395,8 +352,7 @@ mod tests {
     use super::XorList;
 
     #[test]
-    fn push_pop() -> Result<(), String>
-    {
+    fn push_pop() -> Result<(), String> {
         let mut xl = XorList::new() as XorList<u64>;
         xl.push_front(0);
         xl.push_front(1);
@@ -411,20 +367,17 @@ mod tests {
     }
 
     #[test]
-    fn iter() -> Result<(), String>
-    {
+    fn iter() -> Result<(), String> {
         let mut xl = XorList::new() as XorList<u64>;
         for i in 0..1000 {
             xl.push_back(i)
         }
-        for _ in &xl {
-        }
+        for _ in &xl {}
         Ok(())
     }
 
     #[test]
-    fn iter_mut() -> Result<(), String>
-    {
+    fn iter_mut() -> Result<(), String> {
         let mut xl = XorList::new() as XorList<u64>;
         for i in 0..1000 {
             xl.push_back(i)
@@ -436,21 +389,17 @@ mod tests {
     }
 
     #[test]
-    fn iter_into() -> Result<(), String>
-    {
+    fn iter_into() -> Result<(), String> {
         let mut xl = XorList::new() as XorList<u64>;
         for i in 0..1000 {
             xl.push_back(i)
         }
-        for _ in xl {
-        }
+        for _ in xl {}
         Ok(())
     }
 
-
     #[test]
-    fn iter_methods() -> Result<(), String>
-    {
+    fn iter_methods() -> Result<(), String> {
         let mut xl = XorList::new() as XorList<u64>;
         for i in 0..5 {
             xl.push_back(i);
@@ -469,31 +418,49 @@ mod tests {
     }
 
     #[test]
-    fn len() -> Result<(), String>
-    {
+    fn len() -> Result<(), String> {
         let mut xl = XorList::new() as XorList<u64>;
-        assert!(xl.len() == 0); xl.push_back(0);
-        assert!(xl.len() == 1); xl.push_back(1);
-        assert!(xl.len() == 2); xl.push_back(2);
-        assert!(xl.len() == 3); xl.push_back(3);
-        assert!(xl.len() == 4); xl.push_back(4);
-        assert!(xl.len() == 5); xl.push_back(5);
-        assert!(xl.len() == 6); xl.push_back(6);
-        assert!(xl.len() == 7); xl.push_back(7);
-        assert!(xl.len() == 8); xl.push_back(8);
-        assert!(xl.len() == 9); xl.push_back(9);
-        xl.pop_front(); assert!(xl.len() == 9);
-        xl.pop_front(); assert!(xl.len() == 8);
-        xl.pop_front(); assert!(xl.len() == 7);
-        xl.pop_front(); assert!(xl.len() == 6);
-        xl.pop_front(); assert!(xl.len() == 5);
-        xl.pop_front(); assert!(xl.len() == 4);
-        xl.pop_front(); assert!(xl.len() == 3);
-        xl.pop_front(); assert!(xl.len() == 2);
-        xl.pop_front(); assert!(xl.len() == 1);
-        xl.pop_front(); assert!(xl.len() == 0);
+        assert!(xl.len() == 0);
+        xl.push_back(0);
+        assert!(xl.len() == 1);
+        xl.push_back(1);
+        assert!(xl.len() == 2);
+        xl.push_back(2);
+        assert!(xl.len() == 3);
+        xl.push_back(3);
+        assert!(xl.len() == 4);
+        xl.push_back(4);
+        assert!(xl.len() == 5);
+        xl.push_back(5);
+        assert!(xl.len() == 6);
+        xl.push_back(6);
+        assert!(xl.len() == 7);
+        xl.push_back(7);
+        assert!(xl.len() == 8);
+        xl.push_back(8);
+        assert!(xl.len() == 9);
+        xl.push_back(9);
+        xl.pop_front();
+        assert!(xl.len() == 9);
+        xl.pop_front();
+        assert!(xl.len() == 8);
+        xl.pop_front();
+        assert!(xl.len() == 7);
+        xl.pop_front();
+        assert!(xl.len() == 6);
+        xl.pop_front();
+        assert!(xl.len() == 5);
+        xl.pop_front();
+        assert!(xl.len() == 4);
+        xl.pop_front();
+        assert!(xl.len() == 3);
+        xl.pop_front();
+        assert!(xl.len() == 2);
+        xl.pop_front();
+        assert!(xl.len() == 1);
+        xl.pop_front();
+        assert!(xl.len() == 0);
         assert!(xl.is_empty());
         Ok(())
     }
 }
-
